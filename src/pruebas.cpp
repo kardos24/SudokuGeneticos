@@ -53,9 +53,6 @@ int main() {
 
 	//Creamos la estructura del GENOMA, un array de bits.
 	GA1DArrayAlleleGenome<int> genome(sudoku->tam, alelos, Objective, sudoku);
-//	genome.initializer(GA1DArrayAlleleGenome< vector<int> >::OrderedInitializer);
-//    genome.mutator(GA1DArrayAlleleGenome< vector<int> >::SwapMutator);
-//    genome.crossover(GA1DArrayAlleleGenome< vector<int> >::OrderCrossover);
 	genome.initializer(InicioSudoku);
 	genome.crossover(CruceSudoku);
 	genome.mutator(MutacionSudoku);
