@@ -3,6 +3,8 @@
 #include <iostream>
 #include <stdlib.h>
 #include <vector>
+#include <cmath>
+#include <cstdlib>
 #include <math.h>
 #include <ga/GASimpleGA.h>
 #include <ga/GA1DArrayGenome.h> //genoma-> array de enteros (dim. 1) alelos
@@ -10,6 +12,8 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <stdio.h>
+#include <string.h>
 #include <string>
 
 using namespace std;
@@ -28,75 +32,82 @@ int CruceSudoku(const GAGenome& p1, const GAGenome & p2, GAGenome* c1,
 void leerSudoku(struct plantilla *S, const char *nombreF);
 void mostrarSudoku(struct plantilla *S);
 
-int main() {
+int main(int argc, char **argv) {
+	//////////////////////// Declaración de parametros por defecto //////////////////////////////
 	string fn;
-	const char* fileName = "Casos/Sudoku-A1.txt";
-   int popsize = 100;
-    int ngen = 1000;
-    int seed = 1;
-    float pmut = 0.5;
-    float pcross = 0.5;
-	if (argc == 1 ){
-		cout << "Introduce el nombre del fichero con los puntos iniciales del sudoku: ";
-			getline(cin,fn);
-			fileName = fn.c_str();
-    }else {
-          if ( argc%2 == 1 ) {
-              for(int i = 1; i < argc; i+=2){
-                  if ( !strcmp(argv[i],"-filename") )
-                       fileName = argv[i+1];
-                  if ( !strcmp(argv[i],"-popsize" ))
-                       popsize = atoi(argv[i+1]);
-                  if ( !strcmp(argv[i],"-generations" ))
-                       ngen = atoi(argv[i+1]);
-                  if ( !strcmp(argv[i],"-pmutation" ))
-                       pmut = atof(argv[i+1]);
-                  if ( !strcmp(argv[i],"-pcross" ))
-                       pcross = atof(argv[i+1]);
-                  if ( !strcmp(argv[i],"-selector" ))
-                       selectorName = argv[i+1];
-                  if ( !strcmp(argv[i],"-seed" ))
-                       seed = atoi(argv[i+1]);
-              }
-          } else{
-                  cout << "Numero de parametros incorrectos.\n";
-                  return 1;
-          }
-    }
+	int ngen = 1200;		// Parametros fijos
+	int seed = 1;
 
+	char* fileName = "Casos/Sudoku-A1.txt";
+	int popsize = 100;								// Tamaño de la población – {100,150}
+	float pmut = 0.01;								// Probabilidad de mutación – {0.01,0.05, 0.1, 0.125, 0.15}
+	float pcross = 0.8;								// Probabilidad de cruce – {0.8, 0.85, 0.9, 0.95}
+	char* selectorName = "roulette";				// Operador de Selección – {GARouletteWheelSelector, GATournamentSelector}
+
+	/////////////////////// Establecimiento de datos a través de parametros de consola ///////////
+	if (argc == 1) {
+		cout << "Introduce el nombre del fichero con los puntos iniciales del sudoku: ";
+		getline(cin, fn);
+		fileName = fn.c_str();
+	} else {
+		if (argc % 2 == 1) {
+			for (int i = 1; i < argc; i += 2) {
+				if (!strcmp(argv[i], "-filename"))
+					fileName = argv[i + 1];
+				if (!strcmp(argv[i], "-popsize"))
+					popsize = atoi(argv[i + 1]);
+				if (!strcmp(argv[i], "-pmutation"))
+					pmut = atof(argv[i + 1]);
+				if (!strcmp(argv[i], "-pcross"))
+					pcross = atof(argv[i + 1]);
+				if (!strcmp(argv[i], "-selector"))
+					selectorName = argv[i + 1];
+			}
+		} else {
+			cout << "Numero de parametros incorrectos.\n";
+			return 1;
+		}
+	}
+
+	//////////////////////// Lectura y recogida de datos iniciales del fichero ////////////////////
 	// Leemos el ficheroç
 	// nombreFichero = argv[1];
 	struct plantilla *sudoku = new plantilla;
-	cout << "Empezar a leer el fichero " << nombreFichero << endl;
+	cout << "Empezar a leer el fichero " << fileName << endl;
 	leerSudoku(sudoku, fileName);
 	cout << "Terminar de leer el fichero" << endl;
 	cout << "Sudoku con los valores iniciales" << endl;
 	mostrarSudoku(sudoku);
 
-	// Declaramos variables para los parametros del GA y las inicializamos
-	int popsize = 60;		// atoi(argv[2]);
-	int ngen = 8000;			// atoi(argv[3]);
-	float pmut = 0.6;		// atoi(argv[4]);
-	float pcross = 0.8;		// atoi(argv[5]);
+
+	/////////////////////// Inicializando la libreria genome y ejecutandola ///////////////////////
+    GARandomSeed(seed);
 
 	GAAlleleSet<int> alelos;
-	for (int i = 1; i <= sudoku->tam; i++)
-		alelos.add(i);
+	for (int i = 1; i <= sudoku->tam; i++)	// Añade los posibles valores del sudoku
+		alelos.add(i);						// del 1 al 9
 
 	//Creamos la estructura del GENOMA, un array de bits.
-	GA1DArrayAlleleGenome<int> genome(sudoku->tam, alelos, Objective, sudoku);
+	GA1DArrayAlleleGenome<int> genome(sudoku->tam*sudoku->tam, alelos, Objective, sudoku);
 	genome.initializer(InicioSudoku);
 	genome.crossover(CruceSudoku);
 	genome.mutator(MutacionSudoku);
-//	genome.crossover(GA1DArrayAlleleGenome<int>::OnePointCrossover);
 
 	GASimpleGA ga(genome);
+
+    if (strcmp(selectorName,"tournament") ){
+        GATournamentSelector selector;
+        ga.selector(selector);
+    }else {
+    	GARouletteWheelSelector selector;
+        ga.selector(selector);
+    }
 
 	ga.minimaxi(-1);
 	ga.populationSize(popsize);
 	ga.nGenerations(ngen);
 	ga.pMutation(pmut);
-	ga.pCrossover(pcross);
+	ga.pCrossover(pcross);	// falta añadir el selector
 	ga.evolve(1);
 	cout << ga.statistics().minEver() << endl;		//Numero de desplazamientos
 
@@ -113,28 +124,31 @@ float Objective(GAGenome& g) {
 	int numFallos = 0;
 	int sq = sqrt(plantilla1->tam);
 
-	for(int i = 0; i < plantilla1->tam; i++){	//Para cada fila, cada columna y cada cuadrante
+	for (int i = 0; i < plantilla1->tam; i++) {	//Para cada fila, cada columna y cada cuadrante
 		int auxfi[plantilla1->tam];
 		int auxco[plantilla1->tam];
 		int auxcu[plantilla1->tam];
-		int por = i/sq;
+		int por = i / sq;
 		por *= sq;
-		for(int x = 0; x < plantilla1->tam; x++){
+		for (int x = 0; x < plantilla1->tam; x++) {
 			auxfi[x] = 0;
 			auxco[x] = 0;
 			auxcu[x] = 0;
 		}
-		for(int j = 0; j < plantilla1->tam; j++){
-			auxfi[genome.gene(i*plantilla1->tam+ j)]+=1;	// Coordenadas i,j para recorrer las filas
-			auxco[genome.gene(j*plantilla1->tam+ i)]+=1;	// Coordenadas i,j para recorrer las columnas
-			int icua = j/sq + por;	// Coordenada i para el cuadrante i,j
-			int jcua = j%sq + por;	// Coordenada j para el cuadrante i,j
-			auxcu[genome.gene(icua*plantilla1->tam + jcua)]+=1;
+		for (int j = 0; j < plantilla1->tam; j++) {
+			auxfi[genome.gene(i * plantilla1->tam + j)] += 1;// Coordenadas i,j para recorrer las filas
+			auxco[genome.gene(j * plantilla1->tam + i)] += 1;// Coordenadas i,j para recorrer las columnas
+			int icua = j / sq + por;	// Coordenada i para el cuadrante i,j
+			int jcua = j % sq + por;	// Coordenada j para el cuadrante i,j
+			auxcu[genome.gene(icua * plantilla1->tam + jcua)] += 1;
 		}
-		for(int y = 0; y < plantilla1->tam; y++){
-			if(auxfi[y] == 0) numFallos++;
-			if(auxco[y] == 0) numFallos++;
-			if(auxcu[y] == 0) numFallos++;
+		for (int y = 0; y < plantilla1->tam; y++) {
+			if (auxfi[y] == 0)
+				numFallos++;
+			if (auxco[y] == 0)
+				numFallos++;
+			if (auxcu[y] == 0)
+				numFallos++;
 		}
 	}
 
