@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
 	int ngen = 1200;		// Parametros fijos
 	int seed = 1;
 
-	char* fileName = "Casos/Sudoku-A1.txt";
+	const char* fileName = "Casos/Sudoku-A1.txt";
 	int popsize = 100;								// Tamaño de la población – {100,150}
 	float pmut = 0.01;								// Probabilidad de mutación – {0.01,0.05, 0.1, 0.125, 0.15}
 	float pcross = 0.8;								// Probabilidad de cruce – {0.8, 0.85, 0.9, 0.95}
