@@ -20,23 +20,55 @@ struct plantilla {
 	int *fijo; // valores fijos iniciales
 };
 
-char* nombreFichero = "Casos/Sudoku-A1.txt";
-
 float Objective(GAGenome &); //Funcion objetivo
 void InicioSudoku(GAGenome& g);
 int MutacionSudoku(GAGenome& g, float pmut);
 int CruceSudoku(const GAGenome& p1, const GAGenome & p2, GAGenome* c1,
 		GAGenome* c2);
-void leerSudoku(struct plantilla *S, char *nombreF);
+void leerSudoku(struct plantilla *S, const char *nombreF);
 void mostrarSudoku(struct plantilla *S);
 
 int main() {
+	string fn;
+	const char* fileName = "Casos/Sudoku-A1.txt";
+   int popsize = 100;
+    int ngen = 1000;
+    int seed = 1;
+    float pmut = 0.5;
+    float pcross = 0.5;
+	if (argc == 1 ){
+		cout << "Introduce el nombre del fichero con los puntos iniciales del sudoku: ";
+			getline(cin,fn);
+			fileName = fn.c_str();
+    }else {
+          if ( argc%2 == 1 ) {
+              for(int i = 1; i < argc; i+=2){
+                  if ( !strcmp(argv[i],"-filename") )
+                       fileName = argv[i+1];
+                  if ( !strcmp(argv[i],"-popsize" ))
+                       popsize = atoi(argv[i+1]);
+                  if ( !strcmp(argv[i],"-generations" ))
+                       ngen = atoi(argv[i+1]);
+                  if ( !strcmp(argv[i],"-pmutation" ))
+                       pmut = atof(argv[i+1]);
+                  if ( !strcmp(argv[i],"-pcross" ))
+                       pcross = atof(argv[i+1]);
+                  if ( !strcmp(argv[i],"-selector" ))
+                       selectorName = argv[i+1];
+                  if ( !strcmp(argv[i],"-seed" ))
+                       seed = atoi(argv[i+1]);
+              }
+          } else{
+                  cout << "Numero de parametros incorrectos.\n";
+                  return 1;
+          }
+    }
 
 	// Leemos el ficheroç
 	// nombreFichero = argv[1];
 	struct plantilla *sudoku = new plantilla;
 	cout << "Empezar a leer el fichero " << nombreFichero << endl;
-	leerSudoku(sudoku, nombreFichero);
+	leerSudoku(sudoku, fileName);
 	cout << "Terminar de leer el fichero" << endl;
 	cout << "Sudoku con los valores iniciales" << endl;
 	mostrarSudoku(sudoku);
@@ -328,7 +360,7 @@ int CruceSudoku(const GAGenome& p1, const GAGenome & p2, GAGenome* c1,
 }
 
 // Lectura del sudoku inicial en S
-void leerSudoku(struct plantilla *S, char *nombreF) {
+void leerSudoku(struct plantilla *S, const char *nombreF) {
 
 	//Leemos los Mochila de fichero.
 	ifstream f(nombreF);
